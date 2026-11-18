@@ -158,3 +158,105 @@ document.getElementById('copy').addEventListener('click',function(){
 
 </body>
 </html>
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Predicting income from census data: a careful classification project</title>
+<style>
+:root{--bg:#fcfcfb;--ink:#161614;--ink2:#52514e;--line:#e6e5e1;--blue:#2a78d6;--orange:#eb6834;--card:#f4f4f1}
+@media (prefers-color-scheme:dark){:root{--bg:#141413;--ink:#f1f0ec;--ink2:#a8a7a1;--line:#2c2b29;--blue:#6da7ec;--orange:#f08a5d;--card:#1d1d1b}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.65 Georgia,"Times New Roman",serif}
+main{max-width:720px;margin:0 auto;padding:56px 22px 80px}
+h1{font-size:2.1rem;line-height:1.2;margin:0 0 14px}
+h2{font-size:1.35rem;margin:52px 0 10px;border-top:1px solid var(--line);padding-top:26px}
+p{margin:0 0 14px;max-width:68ch}
+.lede{color:var(--ink2);font-size:1.1rem}
+.sans,table,.tags{font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 0;font-size:.82rem}
+.tags span{border:1px solid var(--line);border-radius:4px;padding:2px 9px;color:var(--ink2)}
+.links{margin-top:18px;font-family:system-ui,sans-serif;font-size:.95rem}
+a{color:var(--blue)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:26px 0;font-family:system-ui,sans-serif}
+.stats div{background:var(--card);border-left:3px solid var(--blue);padding:12px 14px}
+.stats b{display:block;font-size:1.5rem}
+.stats small{color:var(--ink2)}
+table{border-collapse:collapse;width:100%;font-size:.92rem;margin:12px 0 18px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--ink2);font-weight:600}
+td.n{font-variant-numeric:tabular-nums}
+.todo{color:var(--orange)}
+figure{margin:22px 0}
+figure img{max-width:100%;height:auto;border:1px solid var(--line)}
+figcaption{font:.85rem system-ui,sans-serif;color:var(--ink2);margin-top:6px}
+ul{padding-left:1.2em;max-width:68ch}li{margin-bottom:8px}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+</head>
+<body>
+<main>
+<h1>Predicting who earns over $50K, and knowing how far to trust the answer</h1>
+<p class="lede">A classification project on the Adult Census Income data (48,842 rows). The goal was not just a high score. It was a pipeline where nothing leaks, the test set is used once, and results are checked for men and women separately.</p>
+<div class="tags"><span>Python</span><span>scikit-learn</span><span>pandas</span><span>Gradient boosting</span><span>Cross-validation</span><span>Threshold tuning</span></div>
+<p class="links"><a href="YOUR_REPO_URL">Code on GitHub</a></p>
+
+<div class="stats">
+<div><b>0.831</b><small>PR-AUC in cross-validation (baseline 0.239)</small></div>
+<div><b>9 models</b><small>compared with identical preprocessing</small></div>
+<div><b>1 test run</b><small>9,758 held-out rows, scored once</small></div>
+</div>
+
+<h2>The problem</h2>
+<p>Given a person's age, education, job, marital status, hours worked and capital gains, predict whether their income is above $50K. About 24% of people are in the positive class, so accuracy alone is misleading: predicting "under $50K" for everyone is already 76% accurate. I used PR-AUC as the main metric, where a model with no skill scores about 0.24.</p>
+
+<h2>What was hiding in the data</h2>
+<p>The raw file reports zero missing values, but missing data is stored as the string "?". It appears in workclass, occupation (about 5.7% of rows each) and native country (about 1.8%). Those rows are not random: people with an unknown job have a different rate of high income than people with a known one, so I kept "Unknown" as its own category rather than dropping rows or filling with the most common value.</p>
+<p>Other findings that shaped the design:</p>
+<ul>
+<li>Capital gain is zero for 92% of people and heavily skewed. The value 99,999 is a cap used by the survey: 244 rows, all earning over $50K. I used log1p plus a separate "has gain" flag.</li>
+<li>Hours per week spikes at round numbers (22,803 people report exactly 40), so it is better treated as approximate.</li>
+<li>Education is stored twice (a label and a number), and marital status overlaps heavily with relationship. I kept the numeric education only.</li>
+<li>52 exact duplicate rows were removed before splitting, leaving 48,790.</li>
+</ul>
+<figure><img src="fig1_hidden_issues.png" alt="Three charts: hidden missing values, capital gain distribution, hours per week spikes"><figcaption>Hidden problems in the raw columns.</figcaption></figure>
+<figure><img src="fig2_missingness_signal_dependence.png" alt="Three charts: missingness is not random, income by age, association between categorical columns"><figcaption>Missing values carry signal, age is not linear, and several categorical columns are strongly related.</figcaption></figure>
+
+<h2>How I kept the evaluation honest</h2>
+<ul>
+<li><b>Split first.</b> 80/20 train/test (39,032 / 9,758). The modelling code only ever loads training rows.</li>
+<li><b>No leakage.</b> Scaling and one-hot encoding live inside a scikit-learn Pipeline, so they are refitted on each cross-validation fold's training part only. A check also confirms the target never enters the features.</li>
+<li><b>An append-only experiment log.</b> Every run, its settings and its out-of-fold predictions are saved, and nothing is overwritten.</li>
+<li><b>The test set is locked.</b> The final script refuses to run without a confirmation flag and refuses to run twice.</li>
+</ul>
+
+<h2>Model selection</h2>
+<p>I screened nine models with untuned defaults on 5-fold cross-validation: logistic regression, naive Bayes, decision tree, linear SVM, histogram gradient boosting, random forest, k-nearest neighbours, a small neural network and an RBF SVM. The two best, gradient boosting and random forest, went on to a small grid search. Tuning used plain cross-validation rather than nested, so I treat the tuned scores as slightly optimistic. The final choice was default gradient boosting, decided on training data only.</p>
+
+<h2>Choosing a threshold</h2>
+<p>The usual 0.5 cut-off is a convention, and for a 24% positive class it is rarely best. Using out-of-fold predictions from three different fold shuffles, I picked 0.37, the value that maximised F1. In cross-validation it gave:</p>
+<table>
+<tr><th>Metric</th><th>Expected from CV</th><th>Held-out test</th></tr>
+<tr><td>PR-AUC</td><td class="n">0.831</td><td class="n todo">fill in</td></tr>
+<tr><td>Precision</td><td class="n">0.693</td><td class="n todo">fill in</td></tr>
+<tr><td>Recall</td><td class="n">0.768</td><td class="n todo">fill in</td></tr>
+<tr><td>F1</td><td class="n">0.728</td><td class="n todo">fill in</td></tr>
+</table>
+<p>The test column comes from running the final evaluation once. The script also reports 95% bootstrap intervals and whether the cross-validation estimates fall inside them.</p>
+
+<h2>Results by sex</h2>
+<p>All metrics are also computed separately for women and men, each against its own base rate, because the share earning over $50K differs a lot between the two groups. <span class="todo">Add one or two sentences with the real numbers from final_evaluation.csv.</span></p>
+
+<h2>Limitations</h2>
+<ul>
+<li>The data is from a 1994 census, so the income threshold and the patterns do not describe today.</li>
+<li>Sex, race and country are in the data. This is a modelling exercise, not something to use for real decisions about people.</li>
+<li>Tuning was not nested, and the fold shuffles reuse the same training rows.</li>
+</ul>
+</main>
+</body>
+</html>
