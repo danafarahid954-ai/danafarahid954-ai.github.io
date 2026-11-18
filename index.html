@@ -158,7 +158,142 @@ figcaption{font-size:.88rem;color:var(--muted);max-width:75ch}
   </div>
 
 </section>
-  
+
+<!-- Adult Census Income Classification Project -->
+<section class="project" aria-labelledby="p2">
+
+  <div class="head">
+
+    <span class="label">
+      Featured project · Classification · Python
+    </span>
+
+    <h2 id="p2">
+      Adult Census Income Classification
+    </h2>
+
+    <p>
+      An end-to-end machine learning classification
+      project that predicts whether an individual's
+      annual income exceeds $50K using census data.
+      The project follows a strict leakage-safe
+      methodology, with preprocessing fitted only
+      on training data through scikit-learn pipelines.
+    </p>
+
+    <div class="links">
+      <a class="btn primary"
+         href="https://github.com/danafarahid954-ai/Classification_Model"
+         target="_blank"
+         rel="noopener noreferrer">
+        View repository
+      </a>
+
+      <a class="btn"
+         href="https://github.com/danafarahid954-ai/Classification_Model#readme"
+         target="_blank"
+         rel="noopener noreferrer">
+        Read documentation
+      </a>
+    </div>
+
+  </div>
+
+  <div class="stats">
+
+    <div class="stat">
+      <b>0.817</b>
+      <span>PR-AUC on the held-out test set</span>
+    </div>
+
+    <div class="stat">
+      <b>0.924</b>
+      <span>ROC-AUC on the held-out test set</span>
+    </div>
+
+    <div class="stat">
+      <b>0.770</b>
+      <span>Recall for the above-$50K class</span>
+    </div>
+
+    <div class="stat">
+      <b>0.724</b>
+      <span>F1 Score on the held-out test set</span>
+    </div>
+
+  </div>
+
+  <div class="cols">
+
+    <div>
+      <h3>What the pipeline does</h3>
+
+      <ul>
+        <li>
+          Removes 52 exact duplicate records and
+          performs a stratified 80/20 train-test split.
+        </li>
+
+        <li>
+          Applies missing-value handling, feature
+          engineering, scaling and one-hot encoding.
+        </li>
+
+        <li>
+          Uses stratified 5-fold cross-validation
+          with three repeated fold sets.
+        </li>
+
+        <li>
+          Compares nine classification algorithms
+          using PR-AUC as the primary ranking metric.
+        </li>
+
+        <li>
+          Evaluates the final model on the held-out
+          test set and analyzes decision thresholds.
+        </li>
+      </ul>
+    </div>
+
+    <div>
+      <h3>What it found</h3>
+
+      <ul>
+        <li>
+          Histogram Gradient Boosting achieved the
+          highest cross-validation PR-AUC of 0.830.
+        </li>
+
+        <li>
+          The final test PR-AUC reached 0.817,
+          compared with a no-skill baseline of 0.239.
+        </li>
+
+        <li>
+          The selected decision threshold was 0.37,
+          with a precision of 0.683 and recall of 0.770.
+        </li>
+
+        <li>
+          The analysis also examined performance
+          differences across sex groups.
+        </li>
+      </ul>
+    </div>
+
+  </div>
+
+  <p class="note">
+    Limitations: The dataset is historical and
+    limited to one country. Recall differs between
+    women and men at the selected threshold.
+    The model is a learning project, not a tool
+    for making decisions about real people.
+  </p>
+
+</section>
+<!-- End Adult Census Income Classification Project -->
 <section aria-labelledby="sk">
   <h2 id="sk">Skills used in this project</h2>
   <div class="skills">
